@@ -1,1 +1,1 @@
-web: node notibot.js
+web: node spigitbot.js
