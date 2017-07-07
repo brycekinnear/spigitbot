@@ -1,0 +1,13 @@
+{
+  "name": "Notibot",
+  "version": "1.0.0",
+  "description": "Spigit test bot",
+  "scripts": {
+    "start": "heroku local"
+  },
+  "author": "Bryce Kinnear",
+  "license": "MIT",
+  "dependencies": {
+    "@slack/client": "^3.8.1"
+  }
+}
