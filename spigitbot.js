@@ -39,19 +39,37 @@ function listen() {
 		if ('bot_message' === message.subtype || 'message_changed' === message.subtype) {
 			return;
 		}
-			
+		
+		// isolate the command from ! and whitespace
 		command = trimmedMessage.substr(1, trimmedMessage.length + 1).trim();
 		
 		// generate response text based on message received
 		switch(command.toLowerCase()) {
+		case "help":
+			responseText = "These are some commands you can give me: \n!idea [title] : posts an idea with title \n!random idea : displays a random idea from your community";
+			break;
+		case "welcome":
+			responseText = "Thank you!";
+			break;
+		case "thanks":
+		case "thank you":
+			responseText = "Your wish is my command.";
+			break;
 		case "hi":
+		case "hello":
+		case "salutations":
+		case "greetings":
+		case "what\'s up?":
 			responseText = "Well hello there!";
 			break;
 		case "idea":
-			responseText = "Negative, Ghost Rider.";
+			responseText = "Posting idea...";
 			break;
+		case "random idea":
+			responseText = "Viewing random idea...";
+		break;
 		default:
-			responseText = `Command \'${command}\' not understood.`;
+			responseText = `I\'m sorry; I don\'t understand \'${command}\'.`;
 			break;
 		}
 		
@@ -67,6 +85,7 @@ function listen() {
 			]
 		};
 
+		// posts response to user
 		web.chat.postMessage(message.channel, "", responseMessage, (err, data) => {});
     });
 }
