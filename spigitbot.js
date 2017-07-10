@@ -58,9 +58,9 @@ function listen() {
 		let responseMessage = {
 			"attachments": [
 				{
-					"fallback": "Spigitbot Message",
+					"fallback": "Notibot Message",
 					"title": responseText,
-					"color": "#E29034"
+					"color": "#36a64f"
 					//"ts": 123456789
 					// not sure if timestamp is neccessarily needed here
 				}
