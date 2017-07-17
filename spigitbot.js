@@ -36,9 +36,6 @@ function listen() {
 
 		var channel = message.channel;
 
-		// set default response text
-        var responseText = "I'm sorry, there must've been an error! :(";
-
         var trimmedMessage = message.text.trim(); // cut off extraneous white space to avoid interference
         var command;
 
