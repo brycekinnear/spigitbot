@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Spigit test bot",
   "scripts": {
-    "start": "heroku local"
+    "start": "node spigitbot.js"
   },
   "author": "Bryce Kinnear",
   "license": "MIT",
