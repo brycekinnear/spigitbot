@@ -6,7 +6,7 @@
     "start": "node spigitbot.js"
   },
   "author": "Bryce Kinnear",
-  "license": "MIT",
+  "license": "",
   "dependencies": {
     "@slack/client": "^3.8.1"
   }

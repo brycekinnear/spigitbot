@@ -6,7 +6,7 @@ var WebClient = require('@slack/client').WebClient;
 var RTM_EVENTS = require('@slack/client').RTM_EVENTS;
 var CLIENT_EVENTS = require('@slack/client').CLIENT_EVENTS;
 
-var bot_token = 0; //enter token
+var bot_token = null; //enter actual token - default set to null
 var rtm = new RtmClient(bot_token);
 var web = new WebClient(bot_token);
 
@@ -18,7 +18,7 @@ listen();
 function authenticate() {
     rtm.on(CLIENT_EVENTS.RTM.AUTHENTICATED, (rtmStartData) => {
 		let self = rtmStartData.self;
-		console.log(`Logged in as ${self.name} of team ${rtmStartData.team.name}`);
+		console.log(`Logged in as ${self.name} in team ${rtmStartData.team.name}`);
     });
 }
 
@@ -37,10 +37,12 @@ function listen() {
 
 		var channel = message.channel;
 
-        var trimmedMessage = message.text.trim(); // cut off extraneous white space to avoid interference
-        var command;
+		// cut off extraneous white space to avoid interference
+		var trimmedMessage = message.text.trim();
+		
+		var command;
 
-		// isolate the command from ! and split args into array
+		// split command & args into array
 		var arg = trimmedMessage.split(separator);
 
 		if (arg[0] !== identifier) {
@@ -63,7 +65,7 @@ function listen() {
 		else
 			command = "help";
 
-		// generate response text based on message received
+		// generate response text & execute subprog based on command
 		switch(command) {
 		case "help":
 			respond(message, "These are some commands you can give me: \nsetauth [auth token]: \n\t\t\tsets the authentication token manually \nchallenges [instance]: \n\t\t\tlists all challenges in given instance \nconfig [subdomain] [challenge]: \n\t\t\tconfigures this channel to a challenge \nlist ideas: \n\t\t\tlists all ideas in challenge \nlist stage [stage#]: \n\t\t\tlists all ideas in given stage \nidea [title]: \n\t\t\tposts an idea with title \nrandom idea: \n\t\t\tdisplays a random idea from your community \nfind idea [search term]: \n\t\t\treturns list of ideas containing the search term");
@@ -80,19 +82,20 @@ function listen() {
 		case "hello":
 		case "salutations":
 		case "greetings":
-			respond(message, "Well hello there!");
+			respond(message, "Hello there!");
 			break;
+		/* Automating auth process - TODO remove
 		case "setauth":
 			auth_token = arg[2];
 			respond(message, "Set auth token.");
 			break;
-		break;
+		*/
 		case "communities":
 		case "challenges":
 			listCommunities(auth_token, (text) => {
 				respond(message, text);
 			}, arg[2]);
-		break;
+			break;
 		case "config":
 			var communityID;
 			var communityHost;
@@ -212,6 +215,11 @@ function listen() {
     });
 }
 
+// initiates Slack RTM API
+function initiate(token) {
+    rtm.start(token);
+}
+
 // responds to user with message
 function respond(message, text) {
 	let responseMessage = {
@@ -222,8 +230,6 @@ function respond(message, text) {
 				"footer_icon": "https://avatars.slack-edge.com/2017-07-07/209849865429_a68b0ea005d80030e515_48.png",
 				"color": "#36a64f",
 				"footer": "Spigitbot"
-				//"ts": 123456789
-				// not sure if timestamp is neccessarily needed here
 			}
 		]
 	};
@@ -231,12 +237,61 @@ function respond(message, text) {
     web.chat.postMessage(message.channel, "", responseMessage, (err, data) => {});
 }
 
-// initiates Slack RTM API
-function initiate(token) {
-    rtm.start(token);
+// getting OAuth2.0 authentication token
+function authorize(instance, code, clientID, clientSecret) {
+	url = `https://${instance}.spigit.com/oauth/token`;
+
+	var header = {
+		"Content-Type": "application/x-www-form-urlencoded"
+	}
+
+	var body = {
+		"code": code,
+		"grant_type": "authorization_code",
+		"client_id": clientID,
+		"client_secret": clientSecret
+	}
+
+	var options = {
+		url: url,
+		headers: header,
+		body: body
+	}
+
+	// json object response body will be stored in
+	var bodyObj;
+
+	// posting to get authentication token
+	request.post(options, (error, response, body) => { 
+		// if error is returned
+		if (error != null) {
+			console.log("Error: " + error);
+			console.log("Failed response body: " + body);
+			respond("There was an error retrieving the OAuth token.");
+			return; // leave method
+		}
+
+		// attempt to parse body
+		try {
+			bodyObj = JSON.parse(body);
+		} catch (error) {
+			console.log("Error parsing OAuth token JSON body");
+			respond("There was an error retrieving the OAuth token.");
+			return; // leave method
+		}
+
+		// make sure body is correct
+		if (bodyObj.access_token == undefined) {
+			console.log("No field 'access_token' in returbed body");
+			respond("There was an error retrieving the OAuth token.");
+			return; // leave method
+		}
+
+		console.log("Auth token: " + bodyObj.access_token); // TODO finish method- this is a to test authentication
+	}); // end of post request
 }
 
-// log channel - community pair
+// log channel - community pair into data
 // also returns responseText
 function logPair(channel, communityID, communityHost, communityName, communityTitle) {
 	if (communityID === undefined) {
@@ -281,47 +336,47 @@ function findCommunity(auth_token, sub, title, callback, failureCallback) {
 				console.log("Body: " + body)
 				failureCallback();
 				return;
-			} else {
-				obj = JSON.parse(body);
-
-				console.log("No network error.\n");
-				
-				if (obj == undefined) {
-        			console.log("Failed to retrieve community list.\n");
-        			
-					console.log(`Body returned from GET: ${body}`);
-					failureCallback();
-					return;
-				}
-
-				var communities = obj.content;
-
-				console.log(`Total amount of communities: ${obj.total_count}`);	
-	
-				if (communities == undefined) {
-					console.log("Failed to retrieve communities from list.");
-					
-					console.log(`Body returned from GET: ${body}`);
-
-					failureCallback();
-					return;
-				}
-
-    			for (var i = 0; i < communities.length; i++) {
-					if (title.toLowerCase() === communities[i].title.toLowerCase()) {
-						var cID = communities[i].id;
-						var cHost = communities[i].community_name.substr(0, communities[i].community_name.indexOf('/'));
-            			var cTitle = communities[i].community_name.substr(communities[i].community_name.indexOf('/'), communities[i].community_name.length);
-						callback(id=cID, host=cHost, title=cTitle);
-						console.log(`\nFound correct community: ${cID}, ${cHost}, ${cTitle}\n`);
-            			return;
-					}
-					
-				}
-
-    			console.log("Failed to find community.\n");
-				failureCallback();	
 			}
+
+			obj = JSON.parse(body);
+
+			console.log("No network error.\n");
+			
+			if (obj == undefined) {
+				console.log("Failed to retrieve community list.\n");
+				
+				console.log(`Body returned from GET: ${body}`);
+				failureCallback();
+				return;
+			}
+
+			var communities = obj.content;
+
+			console.log(`Total amount of communities: ${obj.total_count}`);	
+
+			if (communities == undefined) {
+				console.log("Failed to retrieve communities from list.");
+				
+				console.log(`Body returned from GET: ${body}`);
+
+				failureCallback();
+				return;
+			}
+
+			for (var i = 0; i < communities.length; i++) {
+				if (title.toLowerCase() === communities[i].title.toLowerCase()) {
+					var cID = communities[i].id;
+					var cHost = communities[i].community_name.substr(0, communities[i].community_name.indexOf('/'));
+					var cTitle = communities[i].community_name.substr(communities[i].community_name.indexOf('/'), communities[i].community_name.length);
+					callback(id=cID, host=cHost, title=cTitle);
+					console.log(`\nFound correct community: ${cID}, ${cHost}, ${cTitle}\n`);
+					return;
+				}
+				
+			}
+
+			console.log("Failed to find community.\n");
+			failureCallback();	
 		} // end of lambda
 	);
 }
