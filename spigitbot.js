@@ -208,6 +208,9 @@ function listen() {
 				break;
 			}
 			break;
+		case "authenticate":
+			authenticate();
+			break;
 		default:
 			respond(message, `I\'m sorry; I don\'t understand \'${command}\'.`);
 			break;
@@ -238,7 +241,7 @@ function respond(message, text) {
 }
 
 // getting OAuth2.0 authentication token
-function authorize(instance, code, clientID, clientSecret) {
+function authenticate(instance, code, clientID, clientSecret) {
 	url = `https://${instance}.spigit.com/oauth/token`;
 
 	var header = {
