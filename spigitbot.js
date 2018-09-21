@@ -1,24 +1,21 @@
 // tutorial code
+const { RTMClient } = require('@slack/client');
 
-// Create a new instance of the WebClient class with the token stored in your environment variable
-const web = new WebClient(process.env.SLACK_ACCESS_TOKEN);
-// The current date
-const currentTime = new Date().toTimeString();
+// An access token (from your Slack app or custom integration - usually xoxb)
+const token = process.env.SLACK_TOKEN;
 
-// Use the `apps.permissions.resources.list` method to find the conversation ID for an app home
-web.apps.permissions.resources.list()
+// The client is initialized and then started to get an active connection to the platform
+const rtm = new RTMClient(token);
+rtm.start();
+
+// This argument can be a channel ID, a DM ID, a MPDM ID, or a group ID
+// See the "Combining with the WebClient" topic below for an example of how to get this ID
+const conversationId = 'C1232456';
+
+// The RTM client can send simple string messages
+rtm.sendMessage('Hello there', conversationId)
   .then((res) => {
-    // Find the app home to use as the conversation to post a message
-    // At this point, there should only be one app home in the whole response since only one user has installed the app
-    const appHome = res.resources.find(r => r.type === 'app_home');
-
-    // Use the `chat.postMessage` method to send a message from this app
-    return web.chat.postMessage({
-      channel: appHome.id,
-      text: `The current time is ${currentTime}`,
-    });
-  })
-  .then((res) => {
-    console.log('Message posted!');
+    // `res` contains information about the posted message
+    console.log('Message sent: ', res.ts);
   })
   .catch(console.error);
