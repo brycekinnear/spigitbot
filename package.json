@@ -1,6 +1,6 @@
 {
   "name": "Spigitbot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Spigit test bot",
   "scripts": {
     "start": "node spigitbot.js"
